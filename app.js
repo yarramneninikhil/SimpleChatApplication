@@ -1,22 +1,67 @@
 const express = require("express");
-
 const app = express();
-
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: false }));
+const fs = require("fs");
 
-app.get("/login", (req, res, next) => {
-  res.send(
-    '<html><head><title>A simple chat application</title></head><body><form action="/test" method="POST"><input type="text" name="userName"><br><button type="submit">Submit</button></form></body></html>'
-  );
+app.use(bodyParser.urlencoded({ extended: false }));
+app.get("/login", (req, res) => {
+  res.send(`
+  <html><head><title>A simple chat application</title></head><body>
+  <form action="/login-page" method="POST"
+  onsubmit="localStorage.setItem('userName',document.getElementById('userName').value)">
+  <input type="text" name="userName" id="userName">
+  <button type="submit">Submit</button>
+  </form>
+  </body></html>
+  `);
 });
 
-app.post("/test", (req, res, next) => {
-  const result = req.body;
-  localStorage.setItem("name", result.userName);
+app.post("/login-page", (req, res) => {
+  res.redirect("/");
+});
+app.get("/", (req, res) => {
+  let data = "";
+  const readStream = fs.createReadStream("sample.txt");
+  readStream.on("data", (chunk) => {
+    data += chunk;
+  });
+  readStream.on("end", () => {
+    if (data) {
+      res.send(`
+     <html><head><title>A simple chat application</title></head><body>
+    <h1>${data}</h1>
+    <form action="/sample.txt" method="POST"
+    onsubmit="document.getElementById('userName').value=localStorage.getItem('userName')">
+    <input type="text" name="message">
+    <input type="hidden" name="userName" id="userName">
+    <button type="submit">Submit</button>
+    </form>
+    </body></html>
+     `);
+    } else {
+      res.send(`
+      <html><head><title>A simple chat application</title></head><body>
+      <h4>No chats available</h4>
+      <form action="/sample.txt" method="POST"
+      onsubmit="document.getElementById('userName').value=localStorage.getItem('userName')">
+      <input type="text" name="message">
+      <input type="hidden" name="userName" id="userName">
+      <button type="submit">Submit</button>
+      </form>
+      </body></html>
+      `);
+    }
+  });
+});
+
+app.post("/sample.txt", (req, res) => {
+  const { message, userName } = req.body;
+  fs.appendFile("sample.txt", " " + userName + ":" + message, (er) => {
+    console.log(er);
+  });
   res.redirect("/");
 });
 
-app.listen(3001, () => {
-  console.log("Listening on port 3001");
+app.listen(3002, () => {
+  console.log("server is listioning on port 3002");
 });
